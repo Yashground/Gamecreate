@@ -38,6 +38,9 @@
 <div id="instructions">Press 'E' or Tap to toggle shapes.<br>Match your shape with the tunnel's shape!</div>
 
 <script>
+// Detect if user is on a mobile device
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
@@ -47,7 +50,7 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let gameOver = false;
-let speed = 2;
+let speed = isMobile ? 2 : 5;  // Slower speed for mobile
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let successfulPasses = 0;
@@ -56,6 +59,7 @@ let isJumping = false;
 let jumpHeight = 0;
 let raindrops = [];
 let restartTimer;
+let frameRate = isMobile ? 30 : 60;  // Limit FPS on mobile devices
 
 const shapes = ['circle', 'triangle', 'square'];
 let playerShape = 'circle';
@@ -68,7 +72,7 @@ let leafX = canvas.width + 100;
 
 const toggleSound = new Audio('76376__deleted_user_877451__game_over.wav');
 const passSound = new Audio('414436__inspectorj__dropping-metal-pin-on-wood-b.wav');
-const gameOverSound = new Audio('76376__deleted_user_877451__game_over.wav');
+const gameOverSound = new Audio('423957__pillwave__toggle-switch.wav');
 
 // Add both keyboard and touch event listeners
 document.addEventListener('keydown', (e) => {
@@ -99,8 +103,11 @@ function toggleShape() {
 }
 
 function drawNeonShape(x, y, size, color, shapeType) {
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = color;
+    if (!isMobile) {
+        ctx.shadowBlur = 20;  // Apply shadow only on non-mobile devices
+        ctx.shadowColor = color;
+    }
+
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
     ctx.lineWidth = 10;
@@ -230,10 +237,10 @@ function breakShapeAndTunnel() {
 function applyJump() {
     if (isJumping) {
         playerY += jumpHeight;
-        jumpHeight += 10;  // Gravity
+        jumpHeight += 10;  // Gravity effect
 
         if (jumpHeight > 0 && playerY >= canvas.height / 2) {
-            playerY = canvas.height / 2;
+            playerY = canvas.height / 2;  // Reset to the ground
             isJumping = false;
         }
     }
@@ -255,14 +262,11 @@ function drawRain() {
 }
 
 function spawnRain() {
-    // Create raindrops if they don't exist
-    if (raindrops.length === 0) {
-        for (let i = 0; i < 20; i++) {
-            raindrops.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height / 2
-            });
-        }
+    for (let i = 0; i < 20; i++) {
+        raindrops.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height / 2
+        });
     }
 }
 
@@ -284,7 +288,7 @@ function resetGame() {
     clearTimeout(restartTimer);
     gameOver = false;
     score = 0;
-    speed = 2;
+    speed = isMobile ? 4 : 5;
     playerY = canvas.height / 2;
     tunnelQueue = [];
     frameCount = 0;
@@ -313,7 +317,7 @@ function gameLoop() {
         spawnTunnel();
     }
 
-    requestAnimationFrame(gameLoop);
+    setTimeout(() => requestAnimationFrame(gameLoop), 1000 / frameRate);  // Limit FPS for mobile
 }
 
 function startGame() {
@@ -326,3 +330,5 @@ setTimeout(startGame, 3000);
 </script>
 </body>
 </html>
+
+       
