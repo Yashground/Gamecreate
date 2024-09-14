@@ -35,7 +35,7 @@
 <body>
 <canvas id="canvas"></canvas>
 <div id="score"></div>
-<div id="instructions">Press 'E' to toggle shapes.<br>Match your shape with the tunnel's shape!</div>
+<div id="instructions">Press 'E' or Tap to toggle shapes.<br>Match your shape with the tunnel's shape!</div>
 
 <script>
 const canvas = document.getElementById('canvas');
@@ -70,6 +70,7 @@ const toggleSound = new Audio('423957__pillwave__toggle-switch.wav');
 const passSound = new Audio('414436__inspectorj__dropping-metal-pin-on-wood-b.wav');
 const gameOverSound = new Audio('76376__deleted_user_877451__game_over.wav');
 
+// Add both keyboard and touch event listeners
 document.addEventListener('keydown', (e) => {
     if (e.key.toLowerCase() === 'e') {
         toggleShape();
@@ -78,6 +79,12 @@ document.addEventListener('keydown', (e) => {
         isJumping = true;
         jumpHeight = -150;  // Jump up
     }
+});
+
+// Add touch event listener for mobile devices
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();  // Prevent scrolling on mobile
+    toggleShape();  // Trigger shape change on touch
 });
 
 // Add an event listener to reset the game on click after a game over.
