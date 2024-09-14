@@ -32,6 +32,10 @@
             text-align: center;
         }
     </style>
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <canvas id="canvas"></canvas>
@@ -48,7 +52,7 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let gameOver = false;
-let speed = 5;
+let speed = window.innerWidth > 800 ? 5 : 3; // Reduced speed for mobile
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let successfulPasses = 0;
@@ -60,13 +64,13 @@ let gameStarted = false; // Flag to track if the game has started
 let raindrops = [];
 let clouds = [];
 const totalClouds = 5;
-const totalRaindrops = 30; // Number of raindrops to be rendered
+const totalRaindrops = 15; // Reduced number of raindrops for mobile
 
 const shapes = ['circle', 'triangle', 'square'];
 let playerShape = 'circle';
 let tunnelQueue = [];
 let frameCount = 0;
-let spawnInterval = 250;
+let spawnInterval = 300; // Increased spawn interval for smoother gameplay
 
 // Event listener for keyboard
 document.addEventListener('keydown', (e) => {
@@ -167,7 +171,7 @@ function updateTunnels() {
                 tunnel.passed = true;
 
                 if (successfulPasses % 5 === 0) {
-                    speed += 0.5;  // Increase speed every 5 successful passes
+                    speed += 0.3;  // Slower speed increment for mobile
                 }
             } else {
                 endGame();
@@ -254,12 +258,12 @@ function drawRain() {
     ctx.fillStyle = '#00ff00';
     raindrops.forEach(drop => {
         ctx.beginPath();
-        ctx.arc(drop.x, drop.y, 3, 0, Math.PI * 2);
+        ctx.arc(drop.x, drop.y, 2, 0, Math.PI * 2);
         ctx.fill();
-        drop.y += drop.speed; // Move drop down
+        drop.y += drop.speed; // Rain falls
+
         if (drop.y > canvas.height) {
-            drop.y = 0; // Reset drop to top when it hits bottom
-            drop.x = Math.random() * canvas.width;
+            drop.y = 0; // Reset to top when reaching bottom
         }
     });
 }
@@ -271,47 +275,45 @@ function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawPlayer();
-    updateTunnels();
-    tunnelQueue.forEach(drawTunnel);
     drawRoad();
-    drawClouds();  // Draw clouds
-    drawRain();    // Draw rain
+    drawClouds();
+    drawRain();
+    updateTunnels();
     applyJump();
+    tunnelQueue.forEach(drawTunnel);
 
     scoreElement.innerText = `Score: ${score}`;
 
     frameCount++;
     if (frameCount % spawnInterval === 0) {
         spawnTunnel();
-        if (spawnInterval > 60) spawnInterval -= 5;
-        speed += 0.5;
     }
 
     requestAnimationFrame(gameLoop);
 }
 
-// Reset game state
+// Function to reset the game state
 function resetGame() {
     gameOver = false;
     score = 0;
-    speed = 5;
+    speed = window.innerWidth > 800 ? 5 : 3; // Adjust speed for mobile
     tunnelQueue = [];
     frameCount = 0;
-    spawnClouds();  // NEW: Spawn clouds when resetting game
-    spawnRain();    // NEW: Spawn rain when resetting game
+    clouds = [];
+    raindrops = [];
+    spawnClouds();  // Spawn clouds when resetting game
+    spawnRain();    // Spawn rain when resetting game
     gameLoop();
 }
 
-// End the game
+// Function to handle game end
 function endGame() {
     gameOver = true;
     instructions.style.display = 'block';
     instructions.innerHTML = `Game Over! Final Score: ${score}<br>Press 'E' or Tap to Restart`;
 }
 
-// Start with instructions shown
 resetGame();
-
 </script>
 </body>
 </html>
