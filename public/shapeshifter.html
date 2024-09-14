@@ -255,11 +255,14 @@ function drawRain() {
 }
 
 function spawnRain() {
-    for (let i = 0; i < 20; i++) {
-        raindrops.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height / 2
-        });
+    // Create raindrops if they don't exist
+    if (raindrops.length === 0) {
+        for (let i = 0; i < 20; i++) {
+            raindrops.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height / 2
+            });
+        }
     }
 }
 
@@ -301,6 +304,7 @@ function gameLoop() {
     updateTunnels();
     applyJump();
     tunnelQueue.forEach(drawTunnel);
+    drawRain();
 
     scoreElement.innerText = `Score: ${score}`;
 
