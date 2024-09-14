@@ -90,6 +90,17 @@ canvas.addEventListener('click', () => {
     }
 });
 
+// Event listener for touch (mobile taps)
+canvas.addEventListener('touchstart', () => {
+    if (!gameStarted) {
+        startGame(); // Start game if not started yet
+    } else if (gameOver) {
+        resetGame(); // Restart game if it's game over
+    } else {
+        toggleShape(); // Toggle shape during the game when tapping
+    }
+});
+
 // Function to start the game
 function startGame() {
     gameStarted = true;
@@ -292,7 +303,6 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Function to reset the game state
 function resetGame() {
     gameOver = false;
     score = 0;
@@ -301,6 +311,7 @@ function resetGame() {
     frameCount = 0;
     clouds = [];
     raindrops = [];
+    instructions.style.display = 'none'; // Hide the instructions when game restarts
     spawnClouds();  // Spawn clouds when resetting game
     spawnRain();    // Spawn rain when resetting game
     gameLoop();
