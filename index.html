@@ -1,16 +1,242 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Shape Shift Runner</title>
-   <link rel="stylesheet" href="./styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Shift Runner</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #121212;
+        }
+        #canvas {
+            display: block;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ffffff;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+        }
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-   <canvas id="gameCanvas"></canvas>
-   <div id="score"></div>
-   <div id="instructions">Press 'E' or Tap to toggle shapes.<br>Match your shape with the tunnel's shape!</div>
+<canvas id="canvas"></canvas>
+<div id="score"></div>
+<div id="instructions">Press 'E' to toggle shapes.<br>Match your shape with the tunnel's shape!</div>
 
-   <script type="module" src="./src/game.js"></script>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+const instructions = document.getElementById('instructions');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let gameOver = false;
+let speed = 5;
+let score = 0;
+let highScore = localStorage.getItem('highScore') || 0;
+let successfulPasses = 0;
+let playerY = canvas.height / 2;
+let isJumping = false;
+let jumpHeight = 0;
+let raindrops = [];
+let restartTimer;
+
+const shapes = ['circle', 'triangle', 'square'];
+let playerShape = 'circle';
+let tunnelQueue = [];
+let frameCount = 0;
+let spawnInterval = 250;
+let minSpacing = 400;
+let cloudX = canvas.width;
+let leafX = canvas.width + 100;
+
+document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'e') {
+        toggleShape();
+    }
+    if ((e.key === 'ArrowUp' || e.key === 'w') && !isJumping) {
+        isJumping = true;
+        jumpHeight = -150;  // Jump up
+    }
+});
+
+canvas.addEventListener('click', () => {
+    if (gameOver) resetGame();
+});
+
+function toggleShape() {
+    const currentIndex = shapes.indexOf(playerShape);
+    playerShape = shapes[(currentIndex + 1) % shapes.length];
+}
+
+function drawPlayer() {
+    const x = canvas.width / 4;
+    const y = playerY;
+    const size = 50;
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    if (playerShape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, size, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (playerShape === 'triangle') {
+        ctx.beginPath();
+        ctx.moveTo(0, -size);
+        ctx.lineTo(size, size);
+        ctx.lineTo(-size, size);
+        ctx.closePath();
+        ctx.fill();
+    } else if (playerShape === 'square') {
+        ctx.fillRect(-size, -size, size * 2, size * 2);
+    }
+
+    ctx.restore();
+}
+
+function drawTunnel(tunnel) {
+    ctx.strokeStyle = '#ff0066';
+    ctx.lineWidth = 10;
+    const x = tunnel.x;
+    const y = tunnel.y;
+    const size = 60;
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    if (tunnel.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, size, 0, Math.PI * 2);
+        ctx.stroke();
+    } else if (tunnel.shape === 'triangle') {
+        ctx.beginPath();
+        ctx.moveTo(0, -size);
+        ctx.lineTo(size, size);
+        ctx.lineTo(-size, size);
+        ctx.closePath();
+        ctx.stroke();
+    } else if (tunnel.shape === 'square') {
+        ctx.strokeRect(-size, -size, size * 2, size * 2);
+    }
+
+    ctx.restore();
+}
+
+function updateTunnels() {
+    tunnelQueue.forEach((tunnel, index) => {
+        tunnel.x -= speed;
+
+        if (!tunnel.passed && tunnel.x < canvas.width / 4) {
+            if (tunnel.shape === playerShape) {
+                score++;
+                successfulPasses++;
+                tunnel.passed = true;
+
+                if (successfulPasses % 5 === 0) {
+                    speed += 0.5;  // Increase speed every 5 successful passes
+                }
+            } else {
+                endGame();
+            }
+        }
+
+        if (tunnel.x < -100) {
+            tunnelQueue.splice(index, 1);
+        }
+    });
+}
+
+function spawnTunnel() {
+    const tunnelShape = shapes[Math.floor(Math.random() * shapes.length)];
+    tunnelQueue.push({
+        shape: tunnelShape,
+        x: canvas.width + 100,
+        y: canvas.height / 2,
+        passed: false,
+    });
+}
+
+function drawRoad() {
+    ctx.strokeStyle = '#ffcc00';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height / 2 + 100);
+    ctx.lineTo(canvas.width, canvas.height / 2 + 100);
+    ctx.stroke();
+}
+
+function applyJump() {
+    if (isJumping) {
+        playerY += jumpHeight;
+        jumpHeight += 10;  // Gravity
+
+        if (jumpHeight > 0 && playerY >= canvas.height / 2) {
+            playerY = canvas.height / 2;
+            isJumping = false;
+        }
+    }
+}
+
+function gameLoop() {
+    if (gameOver) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawPlayer();
+    updateTunnels();
+    tunnelQueue.forEach(drawTunnel);
+    drawRoad();
+    applyJump();
+
+    scoreElement.innerText = `Score: ${score}`;
+
+    frameCount++;
+    if (frameCount % spawnInterval === 0) {
+        spawnTunnel();
+        if (spawnInterval > 60) spawnInterval -= 5;
+        speed += 0.5;
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+function resetGame() {
+    gameOver = false;
+    score = 0;
+    speed = 5;
+    tunnelQueue = [];
+    frameCount = 0;
+    instructions.style.display = 'none';
+    gameLoop();
+}
+
+function endGame() {
+    gameOver = true;
+    instructions.style.display = 'block';
+    instructions.innerHTML = `Game Over! Final Score: ${score}<br>Restarting...`;
+    setTimeout(resetGame, 3000);
+}
+
+// Start the game
+resetGame();
+</script>
 </body>
 </html>
